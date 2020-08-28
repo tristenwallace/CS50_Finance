@@ -1,0 +1,12 @@
+#!/home/tristen/projects/cs50/cs50_Finance/venv/bin/python3
+# EASY-INSTALL-ENTRY-SCRIPT: 'submit50==3.0.2','console_scripts','submit50'
+__requires__ = 'submit50==3.0.2'
+import re
+import sys
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw?|\.exe)?$', '', sys.argv[0])
+    sys.exit(
+        load_entry_point('submit50==3.0.2', 'console_scripts', 'submit50')()
+    )
