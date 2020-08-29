@@ -34,7 +34,8 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
+# param symbol: takes stock symbol to provide to IEX api
+# returns dict with stock info
 def lookup(symbol):
     """Look up quote for symbol."""
 
@@ -49,10 +50,14 @@ def lookup(symbol):
     # Parse response
     try:
         quote = response.json()
+        print(quote)
         return {
             "name": quote["companyName"],
             "price": float(quote["latestPrice"]),
-            "symbol": quote["symbol"]
+            "symbol": quote["symbol"],
+            "year_high": quote["week52High"],
+            "year_low": quote["week52Low"],
+            "open_price": quote["open"] 
         }
     except (KeyError, TypeError, ValueError):
         return None

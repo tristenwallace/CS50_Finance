@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Quoted
+{% endblock %}
+
+{% block main %}
+    <div class="container">
+        <h1>{{ name }} ({{ symbol }})</h1>
+        <h1>{{ price }}</h1>
+        <h3>Today: {{ change }} ({{ percent_change }}%)</h3>
+        <h3>52 Week High: {{ year_high }}</h3>
+        <h3>52 Week Low: {{ year_low }}</h3>
+    </div>
+{% endblock %}
