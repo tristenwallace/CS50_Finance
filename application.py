@@ -70,17 +70,53 @@ def buy():
         if not request.form.get("shares"):
             return apology("missing # of shares", 400)
 
+        user_id = session["user_id"]
         price = lookup(symbol)["price"]
         shares = request.form.get("shares")
+        cash = db.execute("SELECT cash FROM users WHERE id=:id", id=user_id)[0]["cash"]
+
+        # Check for enough funds
+        if cash < price:
+            return apology("Not enough cash", 400)
 
         # Log transaction information
         db.execute(
             "INSERT INTO transactions ('id', 'type', 'symbol', 'shares', 'price') VALUES(:id, 'buy', :symbol, :shares, :price)",
-            id=session["user_id"],
+            id=user_id,
             symbol=symbol,
             shares=shares,
             price=price,
         )
+
+        # Deduct transaction from cash
+        db.execute(
+            "UPDATE users SET cash=:cash WHERE id=:id", cash=cash - price, id=user_id
+        )
+
+        # Get portfolio table
+        rows = db.execute(
+            "SELECT * FROM portfolios WHERE id=:id AND symbol=:symbol",
+            id=user_id,
+            symbol=symbol,
+        )
+
+        # Add stock if it is not already in portfolio
+        if not rows:
+            db.execute(
+                "INSERT INTO portfolios ('id', 'symbol', 'shares') VALUES(:id, :symbol, :shares)",
+                id=user_id,
+                symbol=symbol,
+                shares=shares,
+            )
+
+        # otherwise, update it with the new shares
+        else:
+            totalShares = row["shares"] + shares
+            db.execute(
+                "UPDATE portfolios SET shares=:shares WHERE id=:id AND symbol=:symbol",
+                id=user_id,
+                shares=totalShares,
+            )
 
         # Redirect user to home page
         return redirect("/")
