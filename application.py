@@ -23,6 +23,7 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
+
 # Custom filter
 app.jinja_env.filters["usd"] = usd
 
@@ -51,7 +52,42 @@ def index():
 @login_required
 def buy():
     """Buy shares of stock"""
-    return apology("TODO")
+
+    # user reached route via POST
+    if request.method == "POST":
+
+        # Check for symbol provided
+        if not request.form.get("symbol"):
+            return apology("missing symbol", 400)
+
+        symbol = request.form.get("symbol")
+
+        # Check if symbol exists
+        if not lookup(symbol):
+            return apology("invalid symbol", 400)
+
+        # Check for quantity
+        if not request.form.get("shares"):
+            return apology("missing # of shares", 400)
+
+        price = lookup(symbol)["price"]
+        shares = request.form.get("shares")
+
+        # Log transaction information
+        db.execute(
+            "INSERT INTO transactions ('id', 'type', 'symbol', 'shares', 'price') VALUES(:id, 'buy', :symbol, :shares, :price)",
+            id=session["user_id"],
+            symbol=symbol,
+            shares=shares,
+            price=price,
+        )
+
+        # Redirect user to home page
+        return redirect("/")
+
+    # user reached route via GET
+    else:
+        return render_template("buy.html")
 
 
 @app.route("/history")
@@ -80,11 +116,15 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=request.form.get("username"))
+        rows = db.execute(
+            "SELECT * FROM users WHERE username = :username",
+            username=request.form.get("username"),
+        )
 
         # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+        if len(rows) != 1 or not check_password_hash(
+            rows[0]["hash"], request.form.get("password")
+        ):
             return apology("invalid username and/or password", 403)
 
         # Remember which user has logged in
@@ -113,15 +153,15 @@ def logout():
 @login_required
 def quote():
     """Get stock quote."""
-    
+
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
-        
-        #Check for symbol provided
+
+        # Check for symbol provided
         if not request.form.get("symbol"):
             return apology("missing symbol", 400)
-        
-        #Check if symbol exists
+
+        # Check if symbol exists
         if not lookup(request.form.get("symbol")):
             return apology("invalid symbol", 400)
 
@@ -134,9 +174,18 @@ def quote():
         year_low = stock["year_low"]
         open_price = stock["open_price"]
         change = round(price - open_price, 2)
-        percent_change = round((price-open_price)/open_price*100, 2)
-        return render_template("quoted.html", name=name, price=usd(price), symbol=symbol, year_high=usd(year_high), year_low=usd(year_low), change=usd(change), percent_change=percent_change)
-    
+        percent_change = round((price - open_price) / open_price * 100, 2)
+        return render_template(
+            "quoted.html",
+            name=name,
+            price=usd(price),
+            symbol=symbol,
+            year_high=usd(year_high),
+            year_low=usd(year_low),
+            change=usd(change),
+            percent_change=percent_change,
+        )
+
     else:
         # User reached route via GET (as by link)
         return render_template("quote.html")
@@ -146,29 +195,34 @@ def quote():
 def register():
     """Register user"""
     if request.method == "POST":
-        
-        #Ensure Username was submitted
+
+        # Ensure Username was submitted
         if not request.form.get("username"):
             return apology("must provide username", 403)
 
-        #Ensure Password was submitted    
+        # Ensure Password was submitted
         elif not request.form.get("password"):
             return apology("must provide password", 403)
 
-        #Ensure Password Confirmation matches Password    
+        # Ensure Password Confirmation matches Password
         elif not request.form.get("confirmation"):
             return apology("passwords must match", 403)
-        
-        #Add user to database
+
+        # Add user to database
         username = request.form.get("username")
         password_hash = generate_password_hash(request.form.get("password"))
-        db.execute("INSERT INTO users ('username', 'hash') VALUES(:username, :hash)", username=username, hash=password_hash)
+        db.execute(
+            "INSERT INTO users ('username', 'hash') VALUES(:username, :hash)",
+            username=username,
+            hash=password_hash,
+        )
 
         # Redirect user to home page
         return redirect("/")
-        
+
     else:
         return render_template("register.html")
+
 
 @app.route("/sell", methods=["GET", "POST"])
 @login_required
