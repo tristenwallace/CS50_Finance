@@ -90,7 +90,7 @@ def buy():
         cash = db.execute("SELECT cash FROM users WHERE id=:id", id=user_id)[0]["cash"]
 
         # Check for enough funds
-        if cash < price:
+        if cash < price * int(shares):
             return apology("Not enough cash", 400)
 
         # Log transaction information
@@ -228,7 +228,7 @@ def quote():
         year_high = stock["year_high"]
         year_low = stock["year_low"]
         change = stock["change"]
-        percent_change = round(stock["change_percent"] * 100, 2)
+        percent_change = stock["change_percent"]
         return render_template(
             "quoted.html",
             name=name,
