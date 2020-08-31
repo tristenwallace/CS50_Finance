@@ -99,7 +99,7 @@ def buy():
             id=user_id,
             symbol=symbol,
             shares=shares,
-            price=price,
+            price=usd(price),
         )
 
         # Deduct transaction from cash
@@ -147,7 +147,10 @@ def buy():
 @login_required
 def history():
     """Show history of transactions"""
-    return apology("TODO")
+    
+    stocks = db.execute("SELECT * FROM transactions WHERE id=:id", id=session["user_id"])
+    return render_template("history.html", stocks=stocks)
+    
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -314,7 +317,7 @@ def sell():
             id=user_id,
             symbol=symbol,
             shares=shares,
-            price=price,
+            price=usd(price),
         )
 
         # Add transaction to cash
