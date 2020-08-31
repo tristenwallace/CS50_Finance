@@ -45,7 +45,21 @@ if not os.environ.get("API_KEY"):
 @login_required
 def index():
     """Show portfolio of stocks"""
-    return apology("TODO")
+    rows = db.execute("SELECT * FROM portfolios WHERE id=:id", id=session["user_id"])
+    cash = db.execute("SELECT cash FROM users WHERE id=:id", id=session["user_id"])[0][
+        "cash"
+    ]
+    total = cash
+
+    for row in rows:
+        stock = lookup(row["symbol"])
+        row["name"] = stock["name"]
+        row["price"] = usd(stock["price"])
+        row["total"] = stock["price"] * row["shares"]
+        total += row["total"]
+        row["total"] = usd(row["total"])
+
+    return render_template("index.html", rows=rows, cash=usd(cash), total=usd(total))
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -94,14 +108,14 @@ def buy():
         )
 
         # Get portfolio table
-        rows = db.execute(
+        inPortfolio = db.execute(
             "SELECT * FROM portfolios WHERE id=:id AND symbol=:symbol",
             id=user_id,
             symbol=symbol,
         )
 
         # Add stock if it is not already in portfolio
-        if not rows:
+        if not inPortfolio:
             db.execute(
                 "INSERT INTO portfolios ('id', 'symbol', 'shares') VALUES(:id, :symbol, :shares)",
                 id=user_id,
@@ -111,7 +125,7 @@ def buy():
 
         # otherwise, update it with the new shares
         else:
-            totalShares = row["shares"] + shares
+            totalShares = inPortfolio[0]["shares"] + shares
             db.execute(
                 "UPDATE portfolios SET shares=:shares WHERE id=:id AND symbol=:symbol",
                 id=user_id,
@@ -202,15 +216,13 @@ def quote():
             return apology("invalid symbol", 400)
 
         stock = lookup(request.form.get("symbol"))
-        print(stock)
         name = stock["name"]
         price = stock["price"]
         symbol = stock["symbol"]
         year_high = stock["year_high"]
         year_low = stock["year_low"]
-        open_price = stock["open_price"]
-        change = round(price - open_price, 2)
-        percent_change = round((price - open_price) / open_price * 100, 2)
+        change = stock["change"]
+        percent_change = round(stock["change_percent"] * 100, 2)
         return render_template(
             "quoted.html",
             name=name,
