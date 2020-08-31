@@ -103,8 +103,11 @@ def buy():
         )
 
         # Deduct transaction from cash
+
         db.execute(
-            "UPDATE users SET cash=:cash WHERE id=:id", cash=cash - price, id=user_id
+            "UPDATE users SET cash=:cash WHERE id=:id",
+            cash=cash - price * int(shares),
+            id=user_id,
         )
 
         # Get portfolio table
@@ -276,7 +279,74 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+
+    user_id = session["user_id"]
+
+    # user reached route via POST
+    if request.method == "POST":
+
+        # Check for symbol provided
+        if not request.form.get("symbol"):
+            return apology("missing symbol", 400)
+
+        symbol = request.form.get("symbol")
+
+        # Check for quantity
+        if not request.form.get("shares"):
+            return apology("missing # of shares", 400)
+
+        shares = int(request.form.get("shares"))
+        price = lookup(symbol)["price"]
+        cash = db.execute("SELECT cash FROM users WHERE id=:id", id=user_id)[0]["cash"]
+        current_shares = db.execute(
+            "SELECT * FROM portfolios WHERE id=:id AND symbol=:symbol",
+            id=user_id,
+            symbol=symbol,
+        )[0]["shares"]
+
+        # Check for enough shares
+        if shares > current_shares:
+            return apology("Not enough shares", 400)
+
+        # Log transaction information
+        db.execute(
+            "INSERT INTO transactions ('id', 'type', 'symbol', 'shares', 'price') VALUES(:id, 'sell', :symbol, :shares, :price)",
+            id=user_id,
+            symbol=symbol,
+            shares=shares,
+            price=price,
+        )
+
+        # Add transaction to cash
+        db.execute(
+            "UPDATE users SET cash=:cash WHERE id=:id",
+            cash=cash + price * shares,
+            id=user_id,
+        )
+
+        # Remove from portfolio if no more shares
+        if shares == current_shares:
+            db.execute(
+                "DELETE FROM portfolios WHERE id=:id AND symbol=:symbol",
+                id=user_id,
+                symbol=symbol,
+            )
+
+        # otherwise, update it with the new shares
+        else:
+            db.execute(
+                "UPDATE portfolios SET shares=:shares WHERE id=:id AND symbol=:symbol",
+                id=user_id,
+                shares=current_shares - shares,
+            )
+
+        # Redirect user to home page
+        return redirect("/")
+
+    # user reached route via GET
+    else:
+        stocks = db.execute("SELECT symbol FROM portfolios WHERE id=:id", id=user_id)
+        return render_template("sell.html", stocks=stocks)
 
 
 def errorhandler(e):
