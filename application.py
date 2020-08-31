@@ -255,13 +255,19 @@ def register():
             return apology("must provide username", 403)
 
         # Ensure Password was submitted
-        elif not request.form.get("password"):
+        if not request.form.get("password"):
             return apology("must provide password", 403)
 
+        password = request.form.get("password")
+
+        if len(password) < 6:
+            return apology("password must be a minimum of 6 characters", 403)
+
         # Ensure Password Confirmation matches Password
-        elif not request.form.get("confirmation"):
+        if request.form.get("confirmation") != password:
             return apology("passwords must match", 403)
 
+        
         # Add user to database
         username = request.form.get("username")
         password_hash = generate_password_hash(request.form.get("password"))
@@ -277,6 +283,56 @@ def register():
     else:
         return render_template("register.html")
 
+@app.route("/password", methods=["GET", "POST"])
+@login_required
+def password():
+    """Change Password"""
+    if request.method == "POST":
+
+        # Ensure Current Password was submitted
+        if not request.form.get("current_password"):
+            return apology("must provide current password", 403)
+
+        # Query database for user
+        rows = db.execute(
+            "SELECT * FROM users WHERE id = :id",
+            id=session["user_id"],
+        )
+
+        # Ensure password is correct
+        if not check_password_hash(
+            rows[0]["hash"], request.form.get("current_password")
+        ):
+            return apology("invalid password", 403)
+
+        # Ensure New Password was submitted
+        if not request.form.get("password"):
+            return apology("must provide new password", 403)
+
+        password = request.form.get("password")
+
+        # Ensure password is at least 6 characters long
+        if len(password) < 6:
+            return apology("password must be a minimum of 6 characters", 403)
+
+        # Ensure Password Confirmation matches Password
+        if request.form.get("confirmation") != password:
+            return apology("passwords must match", 403)
+
+        
+        # Update user password
+        password_hash = generate_password_hash(password)
+        db.execute(
+            "UPDATE users SET hash=:hash WHERE id=:id",
+            id=session["user_id"],
+            hash=password_hash,
+        )
+
+        # Redirect user to home page
+        return redirect("/")
+
+    else:
+        return render_template("password.html")  
 
 @app.route("/sell", methods=["GET", "POST"])
 @login_required

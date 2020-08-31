@@ -64,7 +64,14 @@
         </main>
         
         <footer class="small text-center text-muted">
-            Data provided for free by <a href="https://iextrading.com/developer">IEX</a>. View <a href="https://iextrading.com/api-exhibit-a/">IEX’s Terms of Use</a>.
+            <div class="container">
+                Data provided for free by <a href="https://iextrading.com/developer">IEX</a>. View <a href="https://iextrading.com/api-exhibit-a/">IEX’s Terms of Use</a>.
+            </div>
+            {% if session.user_id %}
+            <div class="container p-4">
+                <a class=" btn btn-dark btn-sm" href="/password">Change Password</a>
+            </div>
+            {% endif %}
         </footer>
 
     </body>
