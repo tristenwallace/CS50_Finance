@@ -341,6 +341,7 @@ def sell():
                 "UPDATE portfolios SET shares=:shares WHERE id=:id AND symbol=:symbol",
                 id=user_id,
                 shares=current_shares - shares,
+                symbol=symbol
             )
 
         # Redirect user to home page
