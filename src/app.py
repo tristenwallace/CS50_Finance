@@ -254,6 +254,15 @@ def register():
         if not request.form.get("username"):
             return apology("must provide username", 403)
 
+        # Query database for user
+        rows = db.execute(
+            "SELECT * FROM users WHERE username = :username",
+            username=request.form.get("username"),
+        )
+
+        if len(rows) > 0:
+            return apology("username already exists", 403)
+
         # Ensure Password was submitted
         if not request.form.get("password"):
             return apology("must provide password", 403)
